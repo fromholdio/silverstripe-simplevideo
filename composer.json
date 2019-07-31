@@ -1,0 +1,29 @@
+{
+	"name": "fromholdio/silverstripe-simplevideo",
+	"type": "silverstripe-vendormodule",
+	"description": "A small SilverStripe module providing a Video object, created by supplying an oEmbed-compatible video URL, which pulls metadata into object locally.",
+	"license": "BSD-3-Clause",
+	"keywords": ["silverstripe", "video", "embed"],
+	"homepage": "https://github.com/fromholdio/silverstripe-simplevideo",
+	"support": {
+		"issues": "https://github.com/fromholdio/silverstripe-simplevideo/issues"
+	},
+	"authors": [{
+		"name": "Luke Fromhold",
+		"homepage": "https://fromhold.io"
+	}],
+	"require": {
+		"php": ">=5.6",
+		"silverstripe/vendor-plugin": "^1.0",
+		"silverstripe/cms": "^4.2",
+		"fromholdio/silverstripe-externalurlfield": "^1.0.3",
+		"unclecheese/display-logic": "^2.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"Fromholdio\\SimpleVideo\\": "src/"
+		}
+	},
+	"prefer-stable": true,
+	"minimum-stability": "dev"
+}
