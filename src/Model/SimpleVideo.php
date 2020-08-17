@@ -64,6 +64,10 @@ class SimpleVideo extends DataObject
         'ImageCMSThumbnail',
         'Title'
     ];
+	
+    private static $field_labels = [
+        'CustomThumbnail' => 'Custom Image',
+    ];
 
     public function getImageCMSThumbnail()
     {
@@ -120,8 +124,8 @@ class SimpleVideo extends DataObject
                         ),
                         $customImageWrapper = Wrapper::create(
                             $customImageField = UploadField::create(
-                                'CustomImage',
-                                $this->fieldLabel('CustomImage')
+                                'CustomThumbnail',
+                                $this->fieldLabel('CustomThumbnail')
                             )
                         )
                     ),
