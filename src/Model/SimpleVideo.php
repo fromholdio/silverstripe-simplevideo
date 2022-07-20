@@ -5,8 +5,10 @@ namespace Fromholdio\SimpleVideo\Model;
 use BurnBright\ExternalURLField\ExternalURLField;
 use Embed\Adapters\Adapter;
 use Embed\Embed;
+use Psr\Log\LoggerInterface;
 use SilverStripe\AssetAdmin\Forms\UploadField;
 use SilverStripe\Assets\Image;
+use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\CheckboxField;
 use SilverStripe\Forms\FieldGroup;
 use SilverStripe\Forms\FieldList;
@@ -44,7 +46,6 @@ class SimpleVideo extends DataObject
         'EmbedHeight' => 'Int',
         'EmbedAspectRatio' => 'Decimal',
         'ProviderURL' => 'ExternalURL',
-        'ProviderVideoID' => 'Varchar',
         'ImageMode' => 'Varchar(10)'
     ];
 
@@ -64,7 +65,7 @@ class SimpleVideo extends DataObject
         'ImageCMSThumbnail',
         'Title'
     ];
-	
+
     private static $field_labels = [
         'CustomThumbnail' => 'Custom Image',
     ];
@@ -77,9 +78,8 @@ class SimpleVideo extends DataObject
                 'HTMLFragment',
                 HTML::createTag('img', ['src' => $this->EmbedThumbnailURL, 'width' => '75'])
             );
-        }
-        else if ($this->CustomThumbnailID) {
-            $thumb = $this->CustomThumbnail()->ThumbnailIcon(75,40);
+        } else if ($this->CustomThumbnailID) {
+            $thumb = $this->CustomThumbnail()->ThumbnailIcon(75, 40);
         }
         return $thumb;
     }
@@ -116,9 +116,9 @@ class SimpleVideo extends DataObject
                                 LiteralField::create(
                                     'ThumbnailPreview',
                                     '<img src="'
-                                        . $this->EmbedThumbnailURL
-                                        . '" style="width: 300px; height: auto;"'
-                                        . '>'
+                                    . $this->EmbedThumbnailURL
+                                    . '" style="width: 300px; height: auto;"'
+                                    . '>'
                                 )
                             )
                         ),
@@ -131,7 +131,6 @@ class SimpleVideo extends DataObject
                     ),
                     Tab::create(
                         'Embed',
-                        TextField::create('ProviderVideoID'),
                         ReadonlyField::create('EmbedWidth'),
                         ReadonlyField::create('EmbedHeight'),
                         ReadonlyField::create('EmbedAspectRatio'),
@@ -152,8 +151,7 @@ class SimpleVideo extends DataObject
             $customImageWrapper->displayIf('ImageMode')->isEqualTo('custom');
             $customImageField->setAllowedFileCategories('image');
 
-        }
-        else {
+        } else {
             $fields = FieldList::create(
                 TabSet::create(
                     'Root',
@@ -186,34 +184,27 @@ class SimpleVideo extends DataObject
             return false;
         }
 
-        $embed = Embed::create(
-            $this->SourceURL,
-            [
-                'choose_bigger_image' => true
-            ]
-        );
+        try {
+            $embed = new Embed();
+            $embedInfo = $embed->get($this->SourceURL);
 
-        if ($embed && $embed instanceof Adapter) {
-            $this->Title = $embed->title;
-            $this->Description = $embed->description;
-            $this->EmbedThumbnailURL = $embed->image;
-            $this->EmbedHTML = $embed->code;
-            $this->EmbedWidth = $embed->width;
-            $this->EmbedHeight = $embed->height;
-            $this->EmbedAspectRatio = $embed->aspectRatio;
-            $this->ProviderURL = $embed->url;
+            $this->Title = (string)$embedInfo->title ?: '';
+            $this->Description = (string)$embedInfo->description ?: '';
 
-            $providers = $embed->getProviders();
-            if (isset($providers['oembed'])) {
-                $oembed = $providers['oembed'];
-                $this->ProviderVideoID = $oembed->getBag()->get('video_id');
-            }
+            $this->EmbedThumbnailURL = (string)$embedInfo->image ?: '';
+            $this->EmbedHTML = (string)$embedInfo->code->html ?: '';
+            $this->EmbedWidth = (int)$embedInfo->code->width ?: '';
+            $this->EmbedHeight = (int)$embedInfo->code->height ?: '';
+            $this->EmbedAspectRatio = (float)$embedInfo->code->ratio ?: '';
+            $this->ProviderURL = (string)$embedInfo->url ?: '';
 
             return true;
-        }
 
-        $this->SourceURL = '';
-        return false;
+        } catch (\Exception $e) {
+            Injector::inst()->get(LoggerInterface::class)->error('SimpleVideo::doRefreshFromSource: ' . $e->getMessage());
+            $this->SourceURL = '';
+            return false;
+        }
     }
 
     public function validate()
