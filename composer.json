@@ -15,7 +15,8 @@
 	"require": {
 		"php": ">=5.6",
 		"silverstripe/vendor-plugin": "^1.0",
-		"silverstripe/cms": "^4.2",
+		"silverstripe/cms": "^4.11",
+		"embed/embed": "^4.0.0",
 		"fromholdio/silverstripe-externalurlfield": "^1.0.3",
 		"unclecheese/display-logic": "^2.0"
 	},
