@@ -13,10 +13,10 @@
 		"homepage": "https://fromhold.io"
 	}],
 	"require": {
-        "silverstripe/framework": "~4.11 || ~5.0",
-		"embed/embed": "^4.0.0",
-		"fromholdio/silverstripe-externalurlfield": "^1.1.0",
-		"unclecheese/display-logic": "~2.0 || ~3.0"
+        "silverstripe/framework": "^6",
+        "embed/embed": "^4",
+        "fromholdio/silverstripe-externalurlfield": "^2",
+        "unclecheese/display-logic": "^4"
 	},
 	"autoload": {
 		"psr-4": {
