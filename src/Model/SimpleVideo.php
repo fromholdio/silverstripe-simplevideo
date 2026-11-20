@@ -239,6 +239,6 @@ class SimpleVideo extends DataObject
 
     public function forTemplate(): string
     {
-        return null;
+        return '';
     }
 }
