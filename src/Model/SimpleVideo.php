@@ -2,13 +2,14 @@
 
 namespace Fromholdio\SimpleVideo\Model;
 
-use BurnBright\ExternalURLField\ExternalURLField;
-use Embed\Adapters\Adapter;
 use Embed\Embed;
+use Exception;
+use Fromholdio\ExternalURLField\ExternalURLField;
 use Psr\Log\LoggerInterface;
 use SilverStripe\AssetAdmin\Forms\UploadField;
 use SilverStripe\Assets\Image;
 use SilverStripe\Core\Injector\Injector;
+use SilverStripe\Core\Validation\ValidationResult;
 use SilverStripe\Forms\CheckboxField;
 use SilverStripe\Forms\FieldGroup;
 use SilverStripe\Forms\FieldList;
@@ -28,15 +29,17 @@ use UncleCheese\DisplayLogic\Forms\Wrapper;
 
 class SimpleVideo extends DataObject
 {
-    private static $table_name = 'SimpleVideo';
-    private static $singular_name = 'Video';
-    private static $plural_name = 'Videos';
+    private static string $table_name = 'SimpleVideo';
 
-    private static $extensions = [
+    private static string $singular_name = 'Video';
+
+    private static string $plural_name = 'Videos';
+
+    private static array $extensions = [
         Versioned::class
     ];
 
-    private static $db = [
+    private static array $db = [
         'Title' => 'Varchar',
         'Description' => 'Text',
         'SourceURL' => 'ExternalURL',
@@ -49,24 +52,24 @@ class SimpleVideo extends DataObject
         'ImageMode' => 'Varchar(10)'
     ];
 
-    private static $has_one = [
+    private static array $has_one = [
         'CustomThumbnail' => Image::class
     ];
 
-    private static $defaults = [
+    private static array $defaults = [
         'ImageMode' => 'embed'
     ];
 
-    private static $owns = [
+    private static array $owns = [
         'CustomThumbnail'
     ];
 
-    private static $summary_fields = [
+    private static array $summary_fields = [
         'ImageCMSThumbnail',
         'Title'
     ];
 
-    private static $field_labels = [
+    private static array $field_labels = [
         'CustomThumbnail' => 'Custom Image',
     ];
 
@@ -78,16 +81,16 @@ class SimpleVideo extends DataObject
                 'HTMLFragment',
                 HTML::createTag('img', ['src' => $this->EmbedThumbnailURL, 'width' => '75'])
             );
-        } else if ($this->CustomThumbnailID) {
-            $thumb = $this->CustomThumbnail()->ThumbnailIcon(75, 40);
+        } elseif ($thumnail = $this->getCustomThumbnail()) {
+            $thumb = $thumnail->ThumbnailIcon(75, 40);
         }
+
         return $thumb;
     }
 
     public function getCMSFields()
     {
         if ($this->isInDB() && $this->SourceURL) {
-
             $fields = FieldList::create(
                 TabSet::create(
                     'Root',
@@ -150,7 +153,6 @@ class SimpleVideo extends DataObject
             $thumbPreviewField->displayIf('ImageMode')->isEqualTo('embed');
             $customImageWrapper->displayIf('ImageMode')->isEqualTo('custom');
             $customImageField->setAllowedFileCategories('image');
-
         } else {
             $fields = FieldList::create(
                 TabSet::create(
@@ -170,7 +172,7 @@ class SimpleVideo extends DataObject
         return $fields;
     }
 
-    public function saveDoRefreshFromSource($value)
+    public function saveDoRefreshFromSource($value): void
     {
         if ($value) {
             $this->doRefreshFromSource();
@@ -178,7 +180,7 @@ class SimpleVideo extends DataObject
         }
     }
 
-    public function doRefreshFromSource()
+    public function doRefreshFromSource(): bool
     {
         if (!$this->SourceURL) {
             return false;
@@ -199,36 +201,43 @@ class SimpleVideo extends DataObject
             $this->ProviderURL = (string)$embedInfo->url ?: '';
 
             return true;
-
-        } catch (\Exception $e) {
-            Injector::inst()->get(LoggerInterface::class)->error('SimpleVideo::doRefreshFromSource: ' . $e->getMessage());
+        } catch (Exception $exception) {
+            Injector::inst()->get(LoggerInterface::class)->error('SimpleVideo::doRefreshFromSource: ' . $exception->getMessage());
             $this->SourceURL = '';
             return false;
         }
     }
 
-    public function validate()
+    public function validate(): ValidationResult
     {
         $result = parent::validate();
         if (!$this->SourceURL || empty($this->SourceURL)) {
             $result->addError('You must provide a valid Source URL');
         }
+
         return $result;
     }
 
-    public function getEmbedAspectRatioPercent()
+    public function getCustomThumbnail()
+    {
+        return $this->getComponent('CustomThumbnail');
+    }
+
+    public function getEmbedAspectRatioPercent(): ?DBField
     {
         $aspectRatio = $this->EmbedAspectRatio;
         if (!$aspectRatio) {
             if (!$this->EmbedWidth || !$this->EmbedHeight) {
                 return null;
             }
+
             $aspectRatio = $this->EmbedHeight / $this->EmbedWidth * 100;
         }
+
         return DBField::create_field('Percentage', $aspectRatio / 100, null, 2);
     }
 
-    public function forTemplate()
+    public function forTemplate(): string
     {
         return null;
     }
